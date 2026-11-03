@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>____的鱼塘</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  background:radial-gradient(circle at 50% 0%,#0b2740,#03080e 70%);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  color:#e6f6ff;padding:10px;
+}
+#app{
+  position:relative;width:100%;max-width:420px;height:min(860px,96vh);
+  background:linear-gradient(180deg,#0a2337 0%,#071a2a 45%,#04101b 100%);
+  border-radius:28px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.75),inset 0 0 0 1px rgba(94,231,255,.15);
+}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;}
+.screen.active{display:flex;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- 起名页 ---------- */
+#screen-name{align-items:center;justify-content:center;padding:30px;text-align:center;}
+.big-fish{font-size:70px;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 10px 20px rgba(31,209,255,.4));}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+.title{font-size:26px;margin:16px 0 8px;letter-spacing:1px;
+  background:linear-gradient(90deg,#5ee7ff,#a6ffe6,#5ee7ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{font-size:13px;color:#7fb8d4;}
+#name-input{width:100%;max-width:260px;margin:20px 0;padding:14px 18px;border-radius:14px;
+  border:1px solid rgba(94,231,255,.3);background:rgba(255,255,255,.06);color:#e6f6ff;
+  font-size:16px;text-align:center;font-family:inherit;outline:none;transition:.2s;}
+#name-input:focus{border-color:#1fd1ff;box-shadow:0 0 0 3px rgba(31,209,255,.15);}
+#name-input::placeholder{color:#4a7d96;}
+
+/* ---------- 通用按钮 ---------- */
+.btn{
+  border:1px solid rgba(94,231,255,.3);border-radius:12px;padding:10px 18px;
+  font-size:14px;font-weight:600;background:rgba(94,231,255,.12);color:#9fe9ff;
+  cursor:pointer;transition:.18s;font-family:inherit;white-space:nowrap;
+}
+.btn:hover{background:rgba(94,231,255,.22);transform:translateY(-1px);}
+.btn:active{transform:scale(.96);}
+.btn.primary{background:linear-gradient(135deg,#1fd1ff,#0b8ec9);color:#02141f;
+  border-color:transparent;box-shadow:0 6px 18px rgba(31,209,255,.35);}
+.btn.primary:hover{filter:brightness(1.12);}
+.btn.small{padding:8px 13px;font-size:13px;}
+
+/* ---------- 主页 ---------- */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 18px 10px;}
+.brand{font-size:17px;font-weight:700;letter-spacing:.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.wallet{background:rgba(255,200,60,.12);border:1px solid rgba(255,200,60,.35);
+  color:#ffd76a;padding:6px 13px;border-radius:999px;font-weight:700;font-size:14px;
+  white-space:nowrap;font-variant-numeric:tabular-nums;}
+
+.pond{position:relative;flex:1;margin:6px 16px 12px;border-radius:22px;overflow:hidden;
+  background:linear-gradient(180deg,#0e3b57 0%,#0a2c44 45%,#06202f 100%);
+  border:1px solid rgba(94,231,255,.2);
+  box-shadow:inset 0 0 70px rgba(0,140,200,.35);}
+.pond::before{content:'';position:absolute;inset:0;z-index:1;
+  background:repeating-linear-gradient(90deg,transparent 0 34px,rgba(94,231,255,.055) 34px 68px);
+  animation:drift 14s linear infinite;}
+@keyframes drift{to{transform:translateX(68px);}}
+.pond::after{content:'';position:absolute;inset:0;z-index:1;
+  background:radial-gradient(circle at 50% 120%,rgba(94,231,255,.18),transparent 60%);}
+.fish-layer{position:absolute;inset:0;z-index:2;}
+.swim{position:absolute;left:-14%;animation-name:swim;
+  animation-timing-function:linear;animation-iteration-count:infinite;}
+@keyframes swim{from{left:-14%;}to{left:106%;}}
+.empty-pond{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;color:#5c93ad;font-size:13px;line-height:1.9;z-index:3;}
+
+/* 污染覆盖层 */
+.pollute-layer{
+  position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:rgba(30,100,30,.38);
+  display:none;
+}
+.pond.polluted .pollute-layer{display:block;}
+
+/* 唐雅涵悬浮按钮 */
+.tyh-btn{
+  position:absolute;top:10px;right:10px;z-index:6;
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid rgba(180,255,120,.45);
+  background:rgba(20,60,30,.85);
+  font-size:22px;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 16px rgba(120,255,120,.2);
+  font-family:inherit;
+}
+.tyh-btn:hover{transform:scale(1.1);box-shadow:0 0 24px rgba(120,255,120,.45);}
+
+/* 污染倒计时 */
+.pollute-overlay{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  z-index:6;display:none;align-items:center;gap:6px;
+  background:rgba(20,60,20,.9);border:1px solid rgba(120,255,120,.5);
+  color:#aaffaa;padding:5px 14px;border-radius:999px;font-size:12px;font-weight:600;
+  animation:blink 1.2s ease-in-out infinite;white-space:nowrap;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
+.pollute-overlay b{color:#e8ffe8;font-variant-numeric:tabular-nums;}
+
+.pond-hint{position:absolute;bottom:12px;left:14px;right:14px;display:flex;
+  justify-content:space-between;font-size:12px;color:#8fd4ee;z-index:6;}
+.pond-hint b{color:#5ee7ff;font-variant-numeric:tabular-nums;}
+
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 18px;}
+.menu-card{display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  padding:14px;border-radius:18px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(120,220,255,.15);color:#e6f6ff;cursor:pointer;
+  font-family:inherit;transition:.18s;text-align:left;}
+.menu-card:hover{transform:translateY(-2px);border-color:rgba(31,209,255,.6);
+  background:rgba(31,209,255,.1);box-shadow:0 8px 24px rgba(31,209,255,.15);}
+.menu-card:active{transform:scale(.97);}
+.mi{font-size:22px;margin-bottom:2px;}
+.menu-card b{font-size:15px;}
+.menu-card small{font-size:11px;color:#7fb8d4;}
+
+/* ---------- 子页面 ---------- */
+.subbar{display:flex;align-items:center;gap:12px;padding:16px 16px 12px;
+  border-bottom:1px solid rgba(120,220,255,.12);}
+.subbar h2{font-size:16px;flex:1;letter-spacing:.5px;}
+.back{width:34px;height:34px;border-radius:12px;border:1px solid rgba(120,220,255,.25);
+  background:rgba(255,255,255,.05);color:#9fe9ff;font-size:20px;line-height:1;
+  cursor:pointer;font-family:inherit;transition:.18s;}
+.back:hover{background:rgba(94,231,255,.2);}
+.list{flex:1;overflow-y:auto;padding:14px 16px 30px;}
+.list::-webkit-scrollbar{width:5px;}
+.list::-webkit-scrollbar-thumb{background:rgba(94,231,255,.25);border-radius:3px;}
+
+.sec-title{font-size:13px;color:#7fb8d4;font-weight:700;letter-spacing:1px;
+  margin:16px 0 10px;padding-left:2px;}
+.sec-title:first-child{margin-top:0;}
+
+.card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;
+  background:rgba(255,255,255,.045);border:1px solid rgba(120,220,255,.12);
+  margin-bottom:10px;transition:.18s;}
+.card:hover{background:rgba(255,255,255,.07);}
+.card.active{border-color:rgba(31,209,255,.7);background:rgba(31,209,255,.1);
+  box-shadow:0 0 22px rgba(31,209,255,.15);}
+.card.locked{opacity:.55;}
+.card-emoji{font-size:26px;width:34px;text-align:center;flex-shrink:0;}
+.card-body{flex:1;min-width:0;}
+.card-title{font-size:14px;font-weight:600;display:flex;align-items:center;
+  gap:6px;flex-wrap:wrap;}
+.card-desc{font-size:11.5px;color:#7fb8d4;margin-top:3px;line-height:1.5;}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:999px;
+  background:rgba(94,231,255,.15);color:#5ee7ff;font-weight:600;}
+.card-action{flex-shrink:0;}
+.status-on{font-size:12px;color:#4ce0a0;font-weight:700;}
+
+.empty{text-align:center;color:#4a7d96;font-size:13px;padding:26px 10px;line-height:1.8;}
+
+.panel{background:rgba(31,209,255,.07);border:1px solid rgba(31,209,255,.22);
+  border-radius:18px;padding:14px 16px;margin-bottom:6px;}
+.panel-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;
+  color:#a8d8ea;}
+.panel-row b{color:#e6f6ff;font-variant-numeric:tabular-nums;}
+.panel-row b.gold{color:#ffd76a;}
+
+/* ---------- 唐雅涵页面 ---------- */
+.tyh-dialog{display:flex;align-items:flex-end;gap:12px;padding:6px 0 18px;}
+.tyh-avatar{font-size:52px;animation:bob 3s ease-in-out infinite;flex-shrink:0;}
+.tyh-bubble{
+  position:relative;background:rgba(180,255,120,.12);
+  border:1px solid rgba(180,255,120,.4);border-radius:16px 16px 16px 4px;
+  padding:12px 16px;font-size:14px;color:#d8ffd0;font-weight:600;line-height:1.5;
+}
+
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+  background:rgba(8,38,58,.97);border:1px solid rgba(94,231,255,.45);color:#bfefff;
+  padding:10px 20px;border-radius:999px;font-size:13px;z-index:99;
+  white-space:nowrap;animation:pop .28s ease;pointer-events:none;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);}
+@keyframes pop{from{opacity:0;transform:translate(-50%,12px) scale(.9);}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ========== 起名页 ========== -->
+  <section class="screen active" id="screen-name">
+    <div class="big-fish">🐟</div>
+    <h1 class="title" id="title-live">____的鱼塘</h1>
+    <p class="sub">给你的鱼塘起个名字吧</p>
+    <input id="name-input" maxlength="8" placeholder="输入你的名字">
+    <button class="btn primary" id="btn-start" style="padding:14px 40px;font-size:16px;">开挖鱼塘</button>
+  </section>
+
+  <!-- ========== 主页 ========== -->
+  <section class="screen" id="screen-home">
+    <header class="topbar">
+      <div class="brand" id="hdr-name">我的鱼塘</div>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+
+    <div class="pond" id="pond">
+      <div class="pollute-layer"></div>
+      <div class="fish-layer" id="fish-layer"></div>
+      <button class="tyh-btn" data-go="pollute" title="唐雅涵">😈</button>
+      <div class="pollute-overlay" id="pollute-overlay">
+        <span>☣️ 污染中</span><b>60</b>s
+      </div>
+      <div class="pond-hint">
+        <span id="hdr-level">小泥塘</span>
+        <b id="hdr-rate">+0/秒</b>
+      </div>
+    </div>
+
+    <div class="menu-grid">
+      <button class="menu-card" data-go="levels">
+        <span class="mi">🗺️</span><b>关卡</b><small>解锁新水域</small>
+      </button>
+      <button class="menu-card" data-go="chars">
+        <span class="mi">🧑‍🌾</span><b>人物</b><small>雇佣帮手</small>
+      </button>
+      <button class="menu-card" data-go="shop">
+        <span class="mi">🏪</span><b>商店</b><small>鱼苗·鱼食·装饰</small>
+      </button>
+      <button class="menu-card" data-go="items">
+        <span class="mi">🎒</span><b>我的物品</b><small>查看收藏</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== 关卡页 ========== -->
+  <section class="screen" id="screen-levels">
+    <header class="subbar">
+      <button class="back" data-back>‹</button>
+      <h2>🗺️ 关卡 · 水域</h2>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+    <div class="list" id="list-levels"></div>
+  </section>
+
+  <!-- ========== 人物页 ========== -->
+  <section class="screen" id="screen-chars">
+    <header class="subbar">
+      <button class="back" data-back>‹</button>
+      <h2>🧑‍🌾 人物 · 帮手</h2>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+    <div class="list" id="list-chars"></div>
+  </section>
+
+  <!-- ========== 商店页 ========== -->
+  <section class="screen" id="screen-shop">
+    <header class="subbar">
+      <button class="back" data-back>‹</button>
+      <h2>🏪 商店</h2>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+    <div class="list" id="shop-body"></div>
+  </section>
+
+  <!-- ========== 物品页 ========== -->
+  <section class="screen" id="screen-items">
+    <header class="subbar">
+      <button class="back" data-back>‹</button>
+      <h2>🎒 我的物品</h2>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+    <div class="list" id="items-body"></div>
+  </section>
+
+  <!-- ========== 唐雅涵页面 ========== -->
+  <section class="screen" id="screen-pollute">
+    <header class="subbar">
+      <button class="back" data-back>‹</button>
+      <h2>😈 唐雅涵</h2>
+      <div class="wallet">🪙 <span class="coin-val">0</span></div>
+    </header>
+    <div class="list" id="pollute-body"></div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================
+   一、数据表
+   ========================================= */
+
+const FISH = [
+  { id:'cao',  name:'草鱼',   emoji:'🐟', price:20,    rate:1,    level:1 },
+  { id:'li',   name:'鲤鱼',   emoji:'🐠', price:60,    rate:3,    level:1 },
+  { id:'ji',   name:'鲫鱼',   emoji:'🐡', price:160,   rate:9,    level:2 },
+  { id:'hei',  name:'黑鱼',   emoji:'🐟', price:420,   rate:25,   level:2 },
+  { id:'hong', name:'虹鳟',   emoji:'🐠', price:1200,  rate:70,   level:3 },
+  { id:'shi',  name:'石斑鱼', emoji:'🐡', price:3000,  rate:180,  level:3 },
+  { id:'jin',  name:'金枪鱼', emoji:'🐟', price:8000,  rate:480,  level:4 },
+  { id:'deng', name:'灯笼鱼', emoji:'🐠', price:18000, rate:1100, level:4 },
+  { id:'xing', name:'星辉鱼', emoji:'✨', price:50000, rate:3000, level:5 },
+];
+
+const LEVELS = [
+  { id:1, name:'小泥塘',    emoji:'🪷', cost:0,     mult:1,   desc:'村口的小泥塘，水浅鱼多，适合新手练手。' },
+  { id:2, name:'清水湖',    emoji:'🌊', cost:300,   mult:2,   desc:'湖水清澈见底，鱼群成群结队地游。' },
+  { id:3, name:'山涧溪',    emoji:'🏞️', cost:1500,  mult:3.5, desc:'溪水冰凉刺骨，藏着难得的山珍。' },
+  { id:4, name:'深海湾',    emoji:'🌅', cost:6000,  mult:6,   desc:'深海的鱼，一条顶一筐。' },
+  { id:5, name:'星海秘境',  emoji:'🌌', cost:25000, mult:12,  desc:'传说中会发光的鱼就住在这里。' },
+];
+
+const CHARS = [
+  { id:'laoyu', name:'老渔翁',     emoji:'👴', cost:500,   bonus:0.2,  desc:'养了一辈子鱼，全塘产量 +20%' },
+  { id:'mao',   name:'小胖猫',     emoji:'🐱', cost:1500,  bonus:0.3,  desc:'勤快得不行，产量 +30%' },
+  { id:'qiang', name:'鱼贩子阿强', emoji:'🧑', cost:4000,  bonus:0.5,  desc:'路子广，卖价 +50%' },
+  { id:'jinli', name:'锦鲤少女',   emoji:'👧', cost:10000, bonus:0.8,  desc:'自带好运，产量 +80%' },
+  { id:'long',  name:'龙王三太子', emoji:'🐉', cost:30000, bonus:1.5,  desc:'龙王庇佑，产量直接翻倍有余' },
+];
+
+const DECORS = [
+  { id:'hehua',   name:'一池荷花', emoji:'🪷', cost:400,   bonus:0.10 },
+  { id:'shuiche', name:'大水车',   emoji:'🎡', cost:1200,  bonus:0.20 },
+  { id:'dengta',  name:'池边灯塔', emoji:'🗼', cost:5000,  bonus:0.40 },
+  { id:'penquan', name:'月影喷泉', emoji:'⛲', cost:15000, bonus:0.80 },
+];
+
+/* =========================================
+   二、唐雅涵污染参数（可自行调整）
+   ========================================= */
+const POLLUTE_DURATION     = 60;   // 污染持续秒数
+const POLLUTE_MULT         = 0.1;  // 污染时产量倍率
+const CRYSTAL_PER_SEC      = 1;    // 污染时每秒获得结晶
+const MUTANT_COST          = 30;   // 兑换变异鱼所需结晶
+const MUTANT_RATE          = 60;   // 每条变异鱼产量
+const CLEAN_BASE_COST      = 300;  // 净化基础费用
+const CLEAN_COST_PER_POLL  = 100;  // 每次污染后净化费用增加
+
+/* =========================================
+   三、游戏状态
+   ========================================= */
+const S = {
+  name      : '',
+  coins     : 150,
+  food      : 0,
+  fish      : {},
+  chars     : {},
+  decors    : {},
+  unlocked  : [1],
+  level     : 1,
+  // 唐雅涵污染系统
+  polluted   : false,
+  polluteLeft: 0,
+  polluteCount: 0,
+  crystals   : 0,
+  mutants    : 0,
+};
+
+/* =========================================
+   四、工具函数
+   ========================================= */
+function fmt(n){
+  n = Math.floor(n);
+  if(n < 10000) return n.toLocaleString('en-US');
+  if(n < 1e8)   return (n/1e4).toFixed(1).replace(/\.0$/,'') + '万';
+  return (n/1e8).toFixed(2) + '亿';
+}
+const foodCost   = () => Math.floor(80 * Math.pow(1.8, S.food));
+const getLevel   = id => LEVELS.find(l => l.id === id);
+const cleanCost  = () => CLEAN_BASE_COST + S.polluteCount * CLEAN_COST_PER_POLL;
+
+function baseRate(){
+  let r = 0;
+  for(const f of FISH) r += (S.fish[f.id] || 0) * f.rate;
+  return r;
+}
+
+function totalRate(){
+  let mult = 1 + S.food * 0.1;
+  for(const d of DECORS) if(S.decors[d.id]) mult += d.bonus;
+  for(const c of CHARS)  if(S.chars[c.id])  mult += c.bonus;
+  mult *= getLevel(S.level).mult;
+
+  let base = baseRate() + S.mutants * MUTANT_RATE;
+  let r = base * mult;
+  if(S.polluted) r *= POLLUTE_MULT;
+  return r;
+}
+
+function pay(cost){
+  if(S.coins < cost){ toast('金币不够啦～ 去多养几条鱼吧'); return false; }
+  S.coins -= cost;
+  return true;
+}
+
+let toastTimer = null;
+function toast(msg){
+  const old = document.querySelector('.toast');
+  if(old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('app').appendChild(t);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 1600);
+}
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s =>
+    s.classList.toggle('active', s.id === id));
+}
+
+/* =========================================
+   五、渲染
+   ========================================= */
+function updateHUD(){
+  document.querySelectorAll('.coin-val').forEach(e => e.textContent = fmt(S.coins));
+  const r = document.getElementById('hdr-rate');
+  if(r) r.textContent = '+' + fmt(totalRate()) + '/秒';
+  const l = document.getElementById('hdr-level');
+  if(l) l.textContent = getLevel(S.level).name;
+}
+
+function renderPondFish(){
+  const layer = document.getElementById('fish-layer');
+  const owned = FISH.filter(f => (S.fish[f.id] || 0) > 0);
+
+  if(!owned.length && S.mutants === 0){
+    layer.innerHTML = '<div class="empty-pond">池塘空空如也…<br>去商店买几条鱼苗吧 🐟</div>';
+    return;
+  }
+
+  let html = '';
+  owned.forEach(f => {
+    const count = Math.min(S.fish[f.id], 3);
+    for(let i = 0; i < count; i++){
+      const top   = 12 + Math.random() * 68;
+      const dur   = 9 + Math.random() * 9;
+      const delay = -Math.random() * 14;
+      const size  = 20 + Math.random() * 12;
+      html += `<span class="swim" style="top:${top}%;font-size:${size}px;
+        animation-duration:${dur}s;animation-delay:${delay}s">${f.emoji}</span>`;
+    }
+  });
+
+  // 变异鱼也显示
+  for(let i = 0; i < Math.min(S.mutants, 3); i++){
+    const top   = 12 + Math.random() * 68;
+    const dur   = 8 + Math.random() * 8;
+    const delay = -Math.random() * 14;
+    html += `<span class="swim" style="top:${top}%;font-size:24px;
+      animation-duration:${dur}s;animation-delay:${delay}s;filter:hue-rotate(80deg)">🐙</span>`;
+  }
+
+  layer.innerHTML = html;
+}
+
+/* ---- 关卡页 ---- */
+function renderLevels(){
+  document.getElementById('list-levels').innerHTML = LEVELS.map(l => {
+    const owned = S.unlocked.includes(l.id);
+    const cur   = S.level === l.id;
+    let action;
+    if(cur)        action = `<span class="status-on">使用中</span>`;
+    else if(owned) action = `<button class="btn small" data-act="use-level" data-id="${l.id}">切换</button>`;
+    else           action = `<button class="btn primary small" data-act="buy-level" data-id="${l.id}">${fmt(l.cost)}🪙</button>`;
+
+    return `<div class="card ${cur ? 'active' : ''} ${owned ? '' : 'locked'}">
+      <div class="card-emoji">${l.emoji}</div>
+      <div class="card-body">
+        <div class="card-title">${l.name}<span class="tag">产量 ×${l.mult}</span></div>
+        <div class="card-desc">${owned ? l.desc : '🔒 解锁后开启 · ' + l.desc}</div>
+      </div>
+      <div class="card-action">${action}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- 人物页 ---- */
+function renderChars(){
+  document.getElementById('list-chars').innerHTML = CHARS.map(c => {
+    const owned = !!S.chars[c.id];
+    return `<div class="card ${owned ? 'active' : ''}">
+      <div class="card-emoji">${c.emoji}</div>
+      <div class="card-body">
+        <div class="card-title">${c.name}</div>
+        <div class="card-desc">${c.desc}</div>
+      </div>
+      <div class="card-action">${
+        owned
+          ? '<span class="status-on">已雇佣</span>'
+          : `<button class="btn primary small" data-act="hire" data-id="${c.id}">${fmt(c.cost)}🪙</button>`
+      }</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- 商店页 ---- */
+function renderShop(){
+  const fishHtml = FISH.map(f => {
+    const locked = !S.unlocked.includes(f.level);
+    const n = S.fish[f.id] || 0;
+    return `<div class="card ${locked ? 'locked' : ''}">
+      <div class="card-emoji">${f.emoji}</div>
+      <div class="card-body">
+        <div class="card-title">${f.name}${n ? `<span class="tag">×${n}</span>` : ''}</div>
+        <div class="card-desc">每条 +${fmt(f.rate)}/秒${
+          locked ? ` · 🔒 需【${getLevel(f.level).name}】` : ''
+        }</div>
+      </div>
+      <div class="card-action">
+        <button class="btn ${locked ? '' : 'primary'} small"
+          data-act="buy-fish" data-id="${f.id}">${fmt(f.price)}🪙</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const decorHtml = DECORS.map(d => {
+    const owned = !!S.decors[d.id];
+    return `<div class="card ${owned ? 'active' : ''}">
+      <div class="card-emoji">${d.emoji}</div>
+      <div class="card-body">
+        <div class="card-title">${d.name}</div>
+        <div class="card-desc">全塘产量 +${Math.round(d.bonus * 100)}%</div>
+      </div>
+      <div class="card-action">${
+        owned
+          ? '<span class="status-on">已拥有</span>'
+          : `<button class="btn primary small" data-act="buy-decor" data-id="${d.id}">${fmt(d.cost)}🪙</button>`
+      }</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('shop-body').innerHTML = `
+    <div class="sec-title">🐟 鱼苗市场</div>
+    ${fishHtml}
+
+    <div class="sec-title">🍥 鱼食升级</div>
+    <div class="card">
+      <div class="card-emoji">🍥</div>
+      <div class="card-body">
+        <div class="card-title">高级鱼食<span class="tag">Lv.${S.food}</span></div>
+        <div class="card-desc">全塘产量 +${S.food * 10}% → +${(S.food + 1) * 10}%（永久生效）</div>
+      </div>
+      <div class="card-action">
+        <button class="btn primary small" data-act="buy-food">${fmt(foodCost())}🪙</button>
+      </div>
+    </div>
+
+    <div class="sec-title">🎏 池塘装饰</div>
+    ${decorHtml}
+  `;
+}
+
+/* ---- 我的物品页 ---- */
+function renderItems(){
+  const ownFish   = FISH.filter(f => (S.fish[f.id] || 0) > 0);
+  const ownChars  = CHARS.filter(c => S.chars[c.id]);
+  const ownDecors = DECORS.filter(d => S.decors[d.id]);
+  const lv = getLevel(S.level);
+
+  const fishHtml = ownFish.length
+    ? ownFish.map(f => `<div class="card">
+        <div class="card-emoji">${f.emoji}</div>
+        <div class="card-body">
+          <div class="card-title">${f.name}<span class="tag">×${S.fish[f.id]}</span></div>
+          <div class="card-desc">基础产出 +${fmt(f.rate * S.fish[f.id])}/秒</div>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">池塘里还没有鱼<br>去商店买几条鱼苗吧 🐟</div>';
+
+  const mutantHtml = S.mutants > 0
+    ? `<div class="card active">
+        <div class="card-emoji">🐙</div>
+        <div class="card-body">
+          <div class="card-title">变异鱼<span class="tag">×${S.mutants}</span></div>
+          <div class="card-desc">污染水域的产物 · 基础产出 +${fmt(S.mutants * MUTANT_RATE)}/秒</div>
+        </div>
+      </div>`
+    : '';
+
+  const charHtml = ownChars.length
+    ? ownChars.map(c => `<div class="card">
+        <div class="card-emoji">${c.emoji}</div>
+        <div class="card-body">
+          <div class="card-title">${c.name}</div>
+          <div class="card-desc">${c.desc}</div>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">还没有帮手，去人物页看看吧 🧑‍🌾</div>';
+
+  const decorHtml = ownDecors.length
+    ? ownDecors.map(d => `<div class="card">
+        <div class="card-emoji">${d.emoji}</div>
+        <div class="card-body">
+          <div class="card-title">${d.name}</div>
+          <div class="card-desc">产量 +${Math.round(d.bonus * 100)}%</div>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">池塘还有点素，去商店添置点装饰吧 🎏</div>';
+
+  document.getElementById('items-body').innerHTML = `
+    <div class="panel">
+      <div class="panel-row"><span>当前水域</span><b>${lv.emoji} ${lv.name}</b></div>
+      <div class="panel-row"><span>鱼群基础产出</span><b>${fmt(baseRate())}/秒</b></div>
+      <div class="panel-row"><span>鱼食等级</span><b>Lv.${S.food}（+${S.food * 10}%）</b></div>
+      <div class="panel-row"><span>变异鱼产出</span><b>${fmt(S.mutants * MUTANT_RATE)}/秒</b></div>
+      <div class="panel-row"><span>污染结晶</span><b class="gold">💎 ${S.crystals}</b></div>
+      <div class="panel-row"><span>水域污染次数</span><b>${S.polluteCount} 次</b></div>
+      <div class="panel-row"><span>总产量</span><b class="gold">${fmt(totalRate())}/秒</b></div>
+      <div class="panel-row"><span>持有金币</span><b class="gold coin-val">${fmt(S.coins)}</b></div>
+    </div>
+
+    <div class="sec-title">🐟 我的鱼</div>
+    ${fishHtml}
+    ${mutantHtml}
+
+    <div class="sec-title">🧑‍🌾 我的人物</div>
+    ${charHtml}
+
+    <div class="sec-title">🎏 我的装饰</div>
+    ${decorHtml}
+  `;
+}
+
+/* ---- 唐雅涵污染页 ---- */
+function renderPollute(){
+  const body = document.getElementById('pollute-body');
+  let statusHtml;
+
+  if(S.polluted){
+    statusHtml = `
+      <div class="card active">
+        <div class="card-emoji">☣️</div>
+        <div class="card-body">
+          <div class="card-title">水域污染中</div>
+          <div class="card-desc">
+            产量降至 ${Math.round(POLLUTE_MULT * 100)}% ·
+            每秒 +${CRYSTAL_PER_SEC} 污染结晶 ·
+            剩余 <span id="pollute-left-text">${S.polluteLeft}</span> 秒后自然恢复
+          </div>
+        </div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:12px" data-act="clean">
+        立即净化水域（${fmt(cleanCost())}🪙）
+      </button>
+      <p style="font-size:11.5px;color:#5c93ad;text-align:center;margin-top:12px;line-height:1.7">
+        净化费用会随着污染次数上涨<br>也可以等它自然恢复
+      </p>
+    `;
+  } else {
+    statusHtml = `
+      <div class="card">
+        <div class="card-emoji">🌊</div>
+        <div class="card-body">
+          <div class="card-title">当前水域：${getLevel(S.level).emoji} ${getLevel(S.level).name}</div>
+          <div class="card-desc">
+            让唐雅涵污染水域后，产量降至 ${Math.round(POLLUTE_MULT * 100)}%，
+            但每秒会获得 ${CRYSTAL_PER_SEC} 个污染结晶，可用于兑换变异鱼。
+            持续 ${POLLUTE_DURATION} 秒。
+          </div>
+        </div>
+      </div>
+      <button class="btn primary" style="width:100%;margin-top:12px" data-act="pollute">
+        ☣️ 污染水域
+      </button>
+      <p style="font-size:11.5px;color:#5c93ad;text-align:center;margin-top:12px;line-height:1.7">
+        产量低的时候污染反而赚<br>产量高了可就要三思了
+      </p>
+    `;
+  }
+
+  body.innerHTML = `
+    <div class="tyh-dialog">
+      <div class="tyh-avatar">😈</div>
+      <div class="tyh-bubble">
+        ${S.polluted ? 'tyh：这水已经是我的了，嘿嘿。' : 'tyh：我要污染水域！'}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-row"><span>污染结晶</span><b class="gold">💎 ${S.crystals}</b></div>
+      <div class="panel-row"><span>变异鱼</span><b>🐙 ${S.mutants} 条（+${fmt(S.mutants * MUTANT_RATE)}/秒）</b></div>
+      <div class="panel-row"><span>累计污染次数</span><b>${S.polluteCount} 次</b></div>
+    </div>
+
+    ${statusHtml}
+
+    <div class="sec-title">🧪 污染结晶兑换</div>
+    <div class="card">
+      <div class="card-emoji">🐙</div>
+      <div class="card-body">
+        <div class="card-title">变异鱼</div>
+        <div class="card-desc">每条 +${MUTANT_RATE}/秒产量 · 需要 ${MUTANT_COST} 污染结晶</div>
+      </div>
+      <div class="card-action">
+        <button class="btn primary small" data-act="exchange">兑换</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---- 全量刷新（保留滚动位置） ---- */
+function renderAll(){
+  const scrolls = {};
+  document.querySelectorAll('.list').forEach(el => scrolls[el.id] = el.scrollTop);
+
+  renderLevels();
+  renderChars();
+  renderShop();
+  renderItems();
+  renderPollute();
+  updateHUD();
+  updatePolluteUI();
+
+  document.querySelectorAll('.list').forEach(el => {
+    if(scrolls[el.id] !== undefined) el.scrollTop = scrolls[el.id];
+  });
+}
+
+/* ---- 污染状态 UI 同步（轻量，只改数字） ---- */
+function updatePolluteUI(){
+  const pond = document.getElementById('pond');
+  const ov   = document.getElementById('pollute-overlay');
+  if(pond) pond.classList.toggle('polluted', S.polluted);
+  if(ov){
+    ov.style.display = S.polluted ? 'flex' : 'none';
+    const t = ov.querySelector('b');
+    if(t) t.textContent = S.polluteLeft;
+  }
+  const lt = document.getElementById('pollute-left-text');
+  if(lt) lt.textContent = S.polluteLeft;
+}
+
+/* =========================================
+   六、操作处理
+   ========================================= */
+function handleAction(act, id){
+  switch(act){
+
+    case 'buy-level': {
+      const l = getLevel(+id);
+      if(S.unlocked.includes(l.id)) return;
+      if(!pay(l.cost)) return;
+      S.unlocked.push(l.id);
+      S.level = l.id;
+      toast(`解锁并切换到【${l.name}】！`);
+      renderAll();
+      renderPondFish();
+      break;
+    }
+
+    case 'use-level': {
+      S.level = +id;
+      toast(`已切换到【${getLevel(S.level).name}】`);
+      renderAll();
+      break;
+    }
+
+    case 'hire': {
+      const c = CHARS.find(x => x.id === id);
+      if(S.chars[id]) return;
+      if(!pay(c.cost)) return;
+      S.chars[id] = true;
+      toast(`${c.emoji} ${c.name} 加入了你的鱼塘！`);
+      renderAll();
+      break;
+    }
+
+    case 'buy-fish': {
+      const f = FISH.find(x => x.id === id);
+      if(!S.unlocked.includes(f.level)){
+        toast(`需要先解锁【${getLevel(f.level).name}】`);
+        return;
+      }
+      if(!pay(f.price)) return;
+      S.fish[id] = (S.fish[id] || 0) + 1;
+      toast(`获得 ${f.emoji} ${f.name} ×1`);
+      renderAll();
+      renderPondFish();
+      break;
+    }
+
+    case 'buy-decor': {
+      const d = DECORS.find(x => x.id === id);
+      if(S.decors[id]) return;
+      if(!pay(d.cost)) return;
+      S.decors[id] = true;
+      toast(`池塘添置了 ${d.emoji} ${d.name}`);
+      renderAll();
+      break;
+    }
+
+    case 'buy-food': {
+      if(!pay(foodCost())) return;
+      S.food++;
+      toast(`鱼食升级到 Lv.${S.food}，产量 +${S.food * 10}%`);
+      renderAll();
+      break;
+    }
+
+    /* ---------- 唐雅涵污染 ---------- */
+    case 'pollute': {
+      if(S.polluted) return;
+      S.polluted = true;
+      S.polluteLeft = POLLUTE_DURATION;
+      S.polluteCount++;
+      toast('唐雅涵把水域污染了！☣️');
+      renderAll();
+      break;
+    }
+
+    case 'clean': {
+      if(!S.polluted) return;
+      if(!pay(cleanCost())) return;
+      S.polluted = false;
+      S.polluteLeft = 0;
+      toast('水域已净化，恢复清澈！');
+      renderAll();
+      break;
+    }
+
+    case 'exchange': {
+      if(S.crystals < MUTANT_COST){
+        toast(`污染结晶不够（需要 ${MUTANT_COST} 个）`);
+        return;
+      }
+      S.crystals -= MUTANT_COST;
+      S.mutants++;
+      toast('获得一条变异鱼 🐙！');
+      renderAll();
+      renderPondFish();
+      break;
+    }
+  }
+}
+
+/* =========================================
+   七、事件绑定
+   ========================================= */
+document.addEventListener('click', e => {
+  const go = e.target.closest('[data-go]');
+  if(go){
+    renderAll();
+    show('screen-' + go.dataset.go);
+    return;
+  }
+
+  const back = e.target.closest('[data-back]');
+  if(back){
+    updateHUD();
+    show('screen-home');
+    return;
+  }
+
+  const act = e.target.closest('[data-act]');
+  if(act){
+    handleAction(act.dataset.act, act.dataset.id);
+  }
+});
+
+/* ---- 起名页 ---- */
+const nameInput = document.getElementById('name-input');
+const titleLive = document.getElementById('title-live');
+
+nameInput.addEventListener('input', () => {
+  const v = nameInput.value.trim();
+  titleLive.textContent = (v || '____') + '的鱼塘';
+});
+
+function startGame(){
+  const v = nameInput.value.trim() || '无名';
+  S.name = v;
+  document.getElementById('hdr-name').textContent = v + '的鱼塘';
+  renderAll();
+  renderPondFish();
+  show('screen-home');
+  toast('欢迎来到' + v + '的鱼塘！');
+}
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') startGame(); });
+
+/* =========================================
+   八、游戏主循环
+   ========================================= */
+
+/* 金币结算（每 0.5 秒） */
+setInterval(() => {
+  const rate = totalRate();
+  if(rate > 0){
+    S.coins += rate * 0.5;
+    updateHUD();
+  }
+}, 500);
+
+/* 污染计时（每 1 秒） */
+setInterval(() => {
+  if(!S.polluted) return;
+
+  S.polluteLeft--;
+  S.crystals += CRYSTAL_PER_SEC;
+
+  if(S.polluteLeft <= 0){
+    S.polluted = false;
+    S.polluteLeft = 0;
+    toast('水域已自然恢复清澈～');
+    renderAll();
+  } else {
+    updatePolluteUI();
+    updateHUD();
+    // 若正停留在唐雅涵页面，轻量刷新数字即可
+    if(document.getElementById('screen-pollute').classList.contains('active')){
+      updatePolluteUI();
+    }
+  }
+}, 1000);
+
+/* 初始化 */
+updateHUD();
+</script>
+</body>
+</html>
